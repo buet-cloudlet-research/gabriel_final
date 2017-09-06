@@ -18,19 +18,17 @@
 #   limitations under the License.
 #
 
-import multiprocessing
 import Queue
-from optparse import OptionParser
+import multiprocessing
 import os
 import pprint
 import struct
 import sys
 import time
-import pdb
-import objectrecog_lib.objectrecog as objectrecog
+from optparse import OptionParser
+
 dir_file = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(dir_file, "../.."))
-
 import gabriel
 import gabriel.proxy
 import json
@@ -61,10 +59,7 @@ def process_command_line(argv):
 
 
 class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
-    
-    object_recognition_created = False
-    object_recognition = None    
- 
+
     def add_to_byte_array(self, byte_array, extra_bytes):
         return struct.pack("!{}s{}s".format(len(byte_array),len(extra_bytes)), byte_array, extra_bytes)
 
@@ -76,23 +71,6 @@ class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
         bgr_img=cv2.imdecode(np_data,cv2.IMREAD_COLOR)
         mirror_img=cv2.flip(bgr_img,1)
         _, jpeg_img=cv2.imencode('.jpg', mirror_img)
-        
-	try:
-            if not self.object_recognition_created:
-                self.object_recognition_created = True
-                self.object_recognition = objectrecog.ObjectRecognition()
-
-                LOG.info("Image Processing Unit Initialized")
-        except Exception as e:
-            LOG.info("! !! !!! Error: %s\n" % str(e))
-        try:
-             bgr_img = objectrecog.raw2cv_image(data)
-             bgr_img = self.object_recognition.p4_object_recog(bgr_img)
-             _, jpeg_img = cv2.imencode('.jpg', bgr_img)
-        except Exception as e:
-            LOG.info("! !! Error: %s\n" % str(e))
-            bgr_img = objectrecog.raw2cv_image(data)
-            _, jpeg_img = cv2.imencode('.jpg', bgr_img)
 
         if ANDROID_CLIENT:
             # old version return
@@ -187,4 +165,3 @@ if __name__ == "__main__":
         #if acc_app is not None:
         #    acc_app.terminate()
         result_pub.terminate()
-

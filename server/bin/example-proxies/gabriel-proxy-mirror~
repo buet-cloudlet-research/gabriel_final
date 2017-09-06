@@ -61,10 +61,7 @@ def process_command_line(argv):
 
 
 class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
-    
-    object_recognition_created = False
-    object_recognition = None    
- 
+
     def add_to_byte_array(self, byte_array, extra_bytes):
         return struct.pack("!{}s{}s".format(len(byte_array),len(extra_bytes)), byte_array, extra_bytes)
 

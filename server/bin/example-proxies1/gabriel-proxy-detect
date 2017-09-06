@@ -18,38 +18,41 @@
 #   limitations under the License.
 #
 
-import multiprocessing
 import Queue
-from optparse import OptionParser
+import multiprocessing
 import os
 import pprint
 import struct
 import sys
-import time
-import pdb
+from optparse import OptionParser
+
 import objectrecog_lib.objectrecog as objectrecog
+
 dir_file = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(dir_file, "../.."))
 
 import gabriel
 import gabriel.proxy
 import json
-import cv2
-import numpy as np
 import base64
+
+import cv2
+import time
+
 LOG = gabriel.logging.getLogger(__name__)
-ANDROID_CLIENT=True
+ANDROID_CLIENT = True
+
 
 def process_command_line(argv):
     VERSION = 'gabriel proxy : %s' % gabriel.Const.VERSION
     DESCRIPTION = "Gabriel cognitive assistance"
 
     parser = OptionParser(usage='%prog [option]', version=VERSION,
-            description=DESCRIPTION)
+                          description=DESCRIPTION)
 
     parser.add_option(
-            '-s', '--address', action='store', dest='address',
-            help="(IP address:port number) of directory server")
+        '-s', '--address', action='store', dest='address',
+        help="(IP address:port number) of directory server")
     settings, args = parser.parse_args(argv)
     if len(args) >= 1:
         parser.error("invalid arguement")
@@ -61,23 +64,24 @@ def process_command_line(argv):
 
 
 class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
-    
     object_recognition_created = False
-    object_recognition = None    
- 
+    object_recognition = None
+
     def add_to_byte_array(self, byte_array, extra_bytes):
-        return struct.pack("!{}s{}s".format(len(byte_array),len(extra_bytes)), byte_array, extra_bytes)
+        return struct.pack("!{}s{}s".format(len(byte_array), len(extra_bytes)), byte_array, extra_bytes)
 
     def handle(self, header, data):
+        """
+        PERFORM Cognitive Assistance Processing here
+        :param header: have the data header
+        :param data: the raw image data for processing
+        :return:
+        """
         # PERFORM Cognitive Assistance Processing
         LOG.info("processing: ")
-        LOG.info("%s\n" % header)
-        np_data=np.fromstring(data, dtype=np.uint8)
-        bgr_img=cv2.imdecode(np_data,cv2.IMREAD_COLOR)
-        mirror_img=cv2.flip(bgr_img,1)
-        _, jpeg_img=cv2.imencode('.jpg', mirror_img)
-        
-	try:
+        LOG.info("%s\n" % gabriel.util.print_rtn(header))
+
+        try:
             if not self.object_recognition_created:
                 self.object_recognition_created = True
                 self.object_recognition = objectrecog.ObjectRecognition()
@@ -85,10 +89,15 @@ class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
                 LOG.info("Image Processing Unit Initialized")
         except Exception as e:
             LOG.info("! !! !!! Error: %s\n" % str(e))
+
+        # bgr_img = self.object_recognition.raw2cv_image(data)
+        # bgr_img = self.object_recognition.recognize_image(bgr_img)
+        # bgr_img = self.object_recognition.detect_image(bgr_img)
+
         try:
-             bgr_img = objectrecog.raw2cv_image(data)
-             bgr_img = self.object_recognition.p4_object_recog(bgr_img)
-             _, jpeg_img = cv2.imencode('.jpg', bgr_img)
+            bgr_img = objectrecog.raw2cv_image(data)
+            bgr_img = self.object_recognition.p4_object_recog(bgr_img)
+            _, jpeg_img = cv2.imencode('.jpg', bgr_img)
         except Exception as e:
             LOG.info("! !! Error: %s\n" % str(e))
             bgr_img = objectrecog.raw2cv_image(data)
@@ -98,8 +107,8 @@ class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
             # old version return
             if gabriel.Const.LEGACY_JSON_ONLY_RESULT:
                 jpeg_str = base64.b64encode(jpeg_img)
-                msg={
-                    gabriel.Protocol_result.JSON_KEY_STATUS:'success',
+                msg = {
+                    gabriel.Protocol_result.JSON_KEY_STATUS: 'success',
                     gabriel.Protocol_result.JSON_KEY_IMAGE: jpeg_str,
                     gabriel.Protocol_result.JSON_KEY_IMAGES_ANIMATION: [jpeg_str],
                     gabriel.Protocol_result.JSON_KEY_SPEECH: "mirror"
@@ -108,32 +117,33 @@ class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
             # new gabriel version return
             else:
                 # image data
-                header[gabriel.Protocol_result.JSON_KEY_STATUS]='success'
+                header[gabriel.Protocol_result.JSON_KEY_STATUS] = 'success'
                 # numpy tostring is equal to tobytes
-                rtn_data=jpeg_img.tostring()
+                rtn_data = jpeg_img.tostring()
                 # header has (offset, size) for each data type
-                header[gabriel.Protocol_result.JSON_KEY_IMAGE]=(0, len(rtn_data))
+                header[gabriel.Protocol_result.JSON_KEY_IMAGE] = (0, len(rtn_data))
 
-                # animation data
-                # animation is two images: before mirror and after mirror
-                offset=len(rtn_data)
-                _, ori_img=cv2.imencode('.jpg', bgr_img)
-                animation_data=[jpeg_img.tostring(), ori_img.tostring()]
-                # animation bytes format:
-                # first integer: number of frames
-                # for each frame: size of the frame + data
-                animation_bytes=struct.pack("!I", len(animation_data))
-                for frame in animation_data:
-                    frame_bytes=struct.pack("!I{}s".format(len(frame)), len(frame), frame)
-                    animation_bytes=self.add_to_byte_array(animation_bytes, frame_bytes)
-                rtn_data=self.add_to_byte_array(rtn_data, animation_bytes)
-                header[gabriel.Protocol_result.JSON_KEY_IMAGES_ANIMATION]=(offset, len(animation_bytes))
+                # # animation data
+                # # animation is two images: before mirror and after mirror
+                # offset = len(rtn_data)
+                # _, ori_img = cv2.imencode('.jpg', bgr_img)
+                # animation_data = [jpeg_img.tostring(), ori_img.tostring()]
+                # # animation bytes format:
+                # # first integer: number of frames
+                # # for each frame: size of the frame + data
+                # animation_bytes = struct.pack("!I", len(animation_data))
+                # for frame in animation_data:
+                #     frame_bytes = struct.pack("!I{}s".format(len(frame)), len(frame), frame)
+                #     animation_bytes = self.add_to_byte_array(animation_bytes, frame_bytes)
+                # rtn_data = self.add_to_byte_array(rtn_data, animation_bytes)
+                # header[gabriel.Protocol_result.JSON_KEY_IMAGES_ANIMATION] = (offset, len(animation_bytes))
 
-                # speech data
-                offset=len(rtn_data)
-                speech="mirror"
-                rtn_data=self.add_to_byte_array(rtn_data, speech)
-                header[gabriel.Protocol_result.JSON_KEY_SPEECH]=(offset, len(speech))
+                # # speech data
+                # offset = len(rtn_data)
+                # speech = "mirror"
+                # rtn_data = self.add_to_byte_array(rtn_data, speech)
+                # header[gabriel.Protocol_result.JSON_KEY_SPEECH] = (offset, len(speech))
+
                 return rtn_data
         else:
             # python client can only handle image data
@@ -157,11 +167,13 @@ if __name__ == "__main__":
 
     # image receiving and processing threads
     image_queue = Queue.Queue(gabriel.Const.APP_LEVEL_TOKEN_SIZE)
-    print "TOKEN SIZE OF OFFLOADING ENGINE: %d" % gabriel.Const.APP_LEVEL_TOKEN_SIZE # TODO
+    print "TOKEN SIZE OF OFFLOADING ENGINE: %d" % gabriel.Const.APP_LEVEL_TOKEN_SIZE  # TODO
     video_receive_client = gabriel.proxy.SensorReceiveClient((video_ip, video_port), image_queue)
     video_receive_client.start()
     video_receive_client.isDaemon = True
-    dummy_video_app = DummyVideoApp(image_queue, result_queue, engine_id = 'dummy') # dummy app for image processing
+
+    dummy_video_app = DummyVideoApp(image_queue, result_queue,
+                                    engine_id='Cognitive_video')  # dummy app for image processing
     dummy_video_app.start()
     dummy_video_app.isDaemon = True
 
@@ -182,9 +194,8 @@ if __name__ == "__main__":
             video_receive_client.terminate()
         if dummy_video_app is not None:
             dummy_video_app.terminate()
-        #if acc_client is not None:
+        # if acc_client is not None:
         #    acc_client.terminate()
-        #if acc_app is not None:
+        # if acc_app is not None:
         #    acc_app.terminate()
         result_pub.terminate()
-

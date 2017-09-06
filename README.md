@@ -237,3 +237,4 @@ Related research works
 --------------------------
 
 * [Towards Wearable Cognitive Assistance](http://dl.acm.org/citation.cfm?id=2594383)
+"# gabriel_final" 
