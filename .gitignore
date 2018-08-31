@@ -9,3 +9,4 @@ test-image/
 *.pyc
 *.class
 *.swp
+.idea/

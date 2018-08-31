@@ -63,8 +63,14 @@ def process_command_line(argv):
 class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
     
     object_recognition_created = False
-    object_recognition = None    
- 
+    object_recognition = None
+
+    def __init__(self, *args, **kwargs):
+        super(DummyVideoApp, self).__init__(*args, **kwargs)
+
+        self.object_recognition = objectrecog.ObjectRecognition()
+
+
     def add_to_byte_array(self, byte_array, extra_bytes):
         return struct.pack("!{}s{}s".format(len(byte_array),len(extra_bytes)), byte_array, extra_bytes)
 
@@ -76,15 +82,15 @@ class DummyVideoApp(gabriel.proxy.CognitiveProcessThread):
         bgr_img=cv2.imdecode(np_data,cv2.IMREAD_COLOR)
         mirror_img=cv2.flip(bgr_img,1)
         _, jpeg_img=cv2.imencode('.jpg', mirror_img)
-        
-	try:
-            if not self.object_recognition_created:
-                self.object_recognition_created = True
-                self.object_recognition = objectrecog.ObjectRecognition()
 
-                LOG.info("Image Processing Unit Initialized")
-        except Exception as e:
-            LOG.info("! !! !!! Error: %s\n" % str(e))
+        # try:
+        #     if not self.object_recognition_created:
+        #         self.object_recognition_created = True
+        #         self.object_recognition = objectrecog.ObjectRecognition()
+        #
+        #         LOG.info("Image Processing Unit Initialized")
+        # except Exception as e:
+        #     LOG.info("! !! !!! Error: %s\n" % str(e))
         try:
              bgr_img = objectrecog.raw2cv_image(data)
              bgr_img = self.object_recognition.p4_object_recog(bgr_img)

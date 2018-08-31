@@ -122,7 +122,10 @@ class ObjectRecognition:
         elif self.method == 4:
             if self.method_str != 'BRISK':
                 self.method_str = 'BRISK'
-                self.detector = cv2.BRISK_create()
+                if hasattr(cv2, "BRISK_create"):
+                    self.detector = cv2.BRISK_create()
+                else:
+                    self.detector = cv2.BRISK()
 
         self.dataBase = dict([('SIFT', []), ('AKAZE', []), ('SURF', []),
                               ('ORB', []), ('BRISK', [])])
