@@ -459,6 +459,7 @@ class ObjectRecognition:
                     self.calculateAffinityMatrixAndDraw(bestImage, inliersDataBase, inliersWebCam, image_out)
 
             # Get descriptor dimension of each feature:
+            dim = -1
             if desc is not None:
                 if len(desc) > 0:
                     dim = len(desc[0])

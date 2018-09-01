@@ -148,17 +148,17 @@ def run(sig_frame_available=None):
             if resp.type == ClientReply.SUCCESS and resp.data is not None:
                 (resp_header, resp_data) =resp.data
                 resp_header=json.loads(resp_header)
-                img=resp_data
-                print 'header: {}'.format(resp_header)
-                if sig_frame_available == None:
-                    print 'resp:{}'.format(img[:100])
-                else:
-                    # display received image on the pyqt ui
-                    data=img
-                    np_data=np.fromstring(data, dtype=np.uint8)
-                    frame=cv2.imdecode(np_data,cv2.IMREAD_COLOR)
-                    rgb_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)                    
-                    sig_frame_available.emit(rgb_frame)
+                # img=resp_data
+                # print 'header: {}'.format(resp_header)
+                # if sig_frame_available == None:
+                #     print 'resp:{}'.format(img[:100])
+                # else:
+                #     # display received image on the pyqt ui
+                #     data=img
+                #     np_data=np.fromstring(data, dtype=np.uint8)
+                #     frame=cv2.imdecode(np_data,cv2.IMREAD_COLOR)
+                #     rgb_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+                #     sig_frame_available.emit(rgb_frame)
     except KeyboardInterrupt:
         video_streaming_thread.join()
         result_receiving_thread.join()

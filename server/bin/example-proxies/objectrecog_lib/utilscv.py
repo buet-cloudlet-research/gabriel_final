@@ -3,6 +3,7 @@
 import cv2
 
 
+setattr(cv2, 'LINE_AA', cv2.CV_AA)
 # Auxiliary function to draw text with contrast in an image:
 def draw_str(dst, (x, y), s):
     cv2.putText(dst, s, (x + 1, y + 1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0),
